@@ -2,8 +2,6 @@ FROM node
 
 WORKDIR /app
 
-COPY . ./
-
 COPY . /app
 
 RUN npm install
