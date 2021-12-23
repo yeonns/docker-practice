@@ -1,0 +1,17 @@
+{
+  "name": "3_container_communication",
+  "version": "1.0.0",
+  "description": "container가 host machine, host machine내의 다른 container 또는 외부(HTTP)와 어떻게 communication을 할 수 있는지 알아봅니다.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.24.0",
+    "body-parser": "^1.19.1",
+    "express": "^4.17.2",
+    "mongoose": "^6.1.3"
+  }
+}
