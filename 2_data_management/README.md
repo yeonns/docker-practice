@@ -118,3 +118,65 @@ local     subscription
 $ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription --rm subscribe-app:volumes 
 ```
 
+## Bind Mount
+volume과 다르게 bind mount는 사용자에 의해 관리되기 때문에 host machine내의 위치를 지정할 수 있습니다. named volume처럼 persistent하게 데이터를 저장할 수 있으며, editable하다는 것이 특징입니다.
+```sh
+# 추가적인 -v 옵션이 필요합니다 (-v ABSOLUTE_PATH_OF_THIS_APP:/MAP_PATH)
+$ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -v "/home/user/docker-practice/2_data_management:/app" --rm subscribe-app:volumes
+# OR
+$ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -v $(pwd):/app --rm subscribe-app:volumes
+```
+만약에 host machine에서 docker없이 하기의 명령어를 통해 애플리케이션을 실행한 적이 있다면 위의 명령어로 실행시켰을 때 정상 동작하게 됩니다.
+```sh
+# docker없이 local에서 실행합니다
+$ cd 2_data_management
+$ npm install
+$ node server.js
+# node_modules를 삭제 후, 실행시켜봅시다
+$ rm -rf node_modules/
+$ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -v $(pwd):/app --rm subscribe-app:volumes
+# container에 문제가 있어서 삭제되었습니다
+$ docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+``` 
+하지만 local의 ```node_modules/```를 삭제 후, 다시 container로 실행시키면 정상동작하지 않습니다. 이를 해결하기 위해서는 container실행 시, node_modules에 대해서 anonymous volume을 추가해주어야 합니다.
+```sh
+$ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -v $(pwd):/app -v /app/node_modules --rm subscribe-app:volumes
+```
+Bind mount는 editable하기 때문에, 이제 이 상태에서 ```subscription.html```을 수정한 뒤, page를 reload하면 수정사항이 정상반영 된 것을 확인할 수 있습니다. 즉, 이제 코드를 수정할때마다 이미지를 다시 빌드할 필요가 없어진 겁니다.
+```sh
+# subscription.html을 수정 후, 저장합니다
+$ vi subscription.html
+<h1><a href="/" rel="dofollow">Subscribe Site!!!!!!</a></h1>
+# localhost:3000에서 수정사항이 반영되었는지 확인합니다
+```
+하지만 nodeJS특성상 backend코드인 ```server.js```를 수정하더라도 해당코드는 반영되지 않습니다. 이를 위해 nodemon을 활용해서 backend코드의 수정사항도 container 재실행 없이 반영되도록 할 수 있습니다.
+```sh
+$ npm install nodemon --save-dev
+# nodemon 시작 스크립트를 생성합니다
+$ vi package.json
+  "license": "ISC",
+  "scripts": {
+    "start": "nodemon server.js"
+  }
+# Dockerfile의 CMD["node", "server.js"]를 제거하고 생성한 시작 스크립트 명령어로 변경합니다.
+$ vi Dockerfile
+CMD ["npm", "start"]
+# image를 재빌드 후, container를 실행시킵니다
+$ docker rmi subscribe-app:volumes
+$ docker build -t subscribe-app:volumes .
+$ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -v $(pwd):/app -v /app/node_modules --rm subscribe-app:volumes
+# 이제 server.js를 수정하더라도 nodemon덕분에 수정사항이 즉시 반영됩니다.
+```
+
+## Volume and Bind Mount Summary
+volume과 bind mount에 대해 정리해봅시다.
+
+||Anonymous Volume|Named Volume|Bind Mount|
+|:-:|:-:|:-:|:-:|
+|생성방법|-v /app/...|-v data:/app...|-v /path/to/code:/app...|
+|특징|하나의 container를 위해 생성됩니다|특정 container에 종속되지 않습니다|host file system에 위치하며, 특정 container에 종속되지 않습니다|
+|남아있는가|```--rm```옵션을 사용하지 않아야만 container shutdown/restart시에 사라지지 않습니다|container shutdown/restart시에 남아있습니다|container shutdown/restart시에 남아있습니다|
+|container간 공유가능한가|불가능|가능|가능| 
+|restart시 재사용가능한가|불가능|가능|가능|
+
