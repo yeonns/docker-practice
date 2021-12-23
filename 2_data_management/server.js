@@ -33,7 +33,8 @@ app.post('/subscribe', async(req, res) => {
     .then(async() => {
       res.redirect('/check')
     }).catch(async() => {
-      await fs.rename(tempFilePath, finalFilePath);
+      await fs.copyFile(tempFilePath, finalFilePath);
+      await fs.unlink(tempFilePath);
       res.redirect('/');
     })
 });
