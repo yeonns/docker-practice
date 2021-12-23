@@ -139,7 +139,7 @@ $ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -
 $ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ``` 
-하지만 local의 ```node_modules/```를 삭제 후, 다시 container로 실행시키면 정상동작하지 않습니다. 이를 해결하기 위해서는 container실행 시, node_modules에 대해서 anonymous volume을 추가해주어야 합니다.
+하지만 local의 ```node_modules/```를 삭제 후, 다시 container로 실행시키면 정상동작하지 않습니다. 이를 해결하기 위해서는 container실행 시, node_modules에 대해서 anonymous volume을 추가해주어야 합니다. 이제 local의 ```node_modules/```를 제외한 모든 파일들이 container내로 동기화됩니다.
 ```sh
 $ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -v $(pwd):/app -v /app/node_modules --rm subscribe-app:volumes
 ```
@@ -176,7 +176,63 @@ volume과 bind mount에 대해 정리해봅시다.
 |:-:|:-:|:-:|:-:|
 |생성방법|-v /app/...|-v data:/app...|-v /path/to/code:/app...|
 |특징|하나의 container를 위해 생성됩니다|특정 container에 종속되지 않습니다|host file system에 위치하며, 특정 container에 종속되지 않습니다|
-|남아있는가|```--rm```옵션을 사용하지 않아야만 container shutdown/restart시에 사라지지 않습니다|container shutdown/restart시에 남아있습니다|container shutdown/restart시에 남아있습니다|
+|persistent한가|```--rm```옵션을 사용하지 않아야만 container shutdown/restart시에 사라지지 않습니다|container shutdown/restart시에 남아있습니다|container shutdown/restart시에 남아있습니다|
 |container간 공유가능한가|불가능|가능|가능| 
 |restart시 재사용가능한가|불가능|가능|가능|
 
+## Read-Only Volume
+```:ro```를 통해 volume을 read-only로 생성할 수 있습니다. 하지만, 본 예제에서는 ```temp/``` 디렉토리에 write가 가능해야 하기 때문에 ```/app/temp```에 대해 추가적으로 anonymous volume을 생성해주어야 합니다.
+```sh
+$ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -v $(pwd):/app:ro -v /app/temp -v /app/node_modules --rm subscribe-app:volumes
+```
+read-only volume을 통해 실수로 container내의 파일이 수정되는 것을 막을 수 있습니다.
+
+## DockerIgnore
+본 예제의 Dockerfile에서는 ```COPY . .```를 통해 모든 파일을 복사합니다. 예를 들어, local에 ```node_modules/```가 있다면 이 명령어는 성능저하를 유발시킬 수 있습니다. ```.dockerignore```파일을 생성하면 불필요한 복사를 방지할 수 있습니다.
+```sh
+$ vi .dockerignore
+node_modules
+```
+## Environment Variables
+동일한 image에 대해 서로 다른 configuration을 적용하고 싶을 때 유용합니다. 예를 들어, PORT값을 Environment Variable로 관리해봅시다.
+```sh
+# Dockerfile에 정의할 수 있습니다
+$ vi Dockerfile
+COPY . .
+ENV PORT 3000                     # ENV를 정의합니다
+EXPOSE $PORT                      # ENV의 PORT로 설정합니다  
+$ vi server.js
+app.listen(process.env.PORT);     # ENV의 PORT를 가져오도록 수정합니다
+
+# image build 후 정상동작을 확인합니다
+$ docker build -t subscribe-app:env .
+$ docker run -p 3000:3000 -d --name node-app -v subscription:/app/subscription -v $(pwd):/app -v /app/node_modules --rm subscribe-app:env
+
+# docker run의 parameter로 ENV를 넘길 수도 있습니다
+$ docker run -p 3000:8000 --env PORT=8000 -d --name node-app -v subscription:/app/subscription -v $(pwd):/app -v /app/node_modules --rm subscribe-app:env
+
+# ENV를 정의하는 파일을 생성하고, parameter로 넘길 수도 있습니다
+$ vi .env
+PORT=8000
+# --env-file [path/to/file]
+$ docker run -p 3000:8000 --env-file ./.env -d --name node-app -v subscription:/app/subscription -v $(pwd):/app -v /app/node_modules --rm subscribe-app:env
+```
+
+## Build Arguments
+image에 서로 다른 configuration을 적용하고 싶을 때 유용합니다.
+```sh
+# Dockerfile에 정의할 수 있습니다
+$ vi Dockerfile
+ARG DEFAULT_PORT=3000
+ENV PORT $DEFAULT_PORT
+EXPOSE $PORT
+
+# image build시 parameter로 넘길 수 있습니다
+$ docker build -t subscribe-app:arg --build-arg DEFAULT_PORT=8000 .
+```
+
+## ARGuments and ENVironment Summary
+||ARG|ENV|
+|:-:|:-:|:-:|
+||Dockerfile에 정의합니다|Dockerfile 및 application code에 정의합니다|
+||image build시 ```--build-arg```를 통해 설정합니다|Dockerfile에서 ```ENV```로 설정하거나, docker run시 ```--env```로 설정합니다|
