@@ -1,0 +1,15 @@
+{
+  "name": "2_data_management",
+  "version": "1.0.0",
+  "description": "data 관리 및 volume에 대해 알아봅니다.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.1",
+    "express": "^4.17.2"
+  }
+}

@@ -1,0 +1,35 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Subscribe</title>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+
+<body>
+  <div class="login-root">
+    <div class="box-root flex-flex flex-direction--column" style="min-height: 100vh;flex-grow: 1;">
+      <div class="box-root padding-top--24 flex-flex flex-direction--column" style="flex-grow: 1; z-index: 9;">
+        <div class="box-root padding-top--48 padding-bottom--24 flex-flex flex-justifyContent--center">
+          <h1><a href="/" rel="dofollow">Subscribe Site</a></h1>
+        </div>
+
+        <div class="formbg">
+          <div class="padding-horizontal--48">
+            <span class="padding-bottom--15">What is your name?</span>
+            <form id="stripe-login" action="/subscribe" method="POST">
+              <div class="field padding-bottom--24">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" />
+              </div>
+              <div class="field padding-bottom--24">
+                <input type="submit" name="submit" value="Subscribe" />
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

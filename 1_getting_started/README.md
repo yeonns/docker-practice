@@ -210,4 +210,6 @@ $ docker build -t myapp:latest .
 $ docker ps
 REPOSITORY              TAG       IMAGE ID       CREATED         SIZE
 myapp                   latest    96f4d80033a2   3 seconds ago   996MB
+# rename image
+$ docker tag myapp:latest node-app:latest
 ```
