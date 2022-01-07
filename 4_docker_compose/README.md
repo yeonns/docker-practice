@@ -27,17 +27,17 @@ docker-compose.yaml
 version: "3.8"
 services:
   mongodb:
-    image: 'mongo'      # image 이름입니다 (local 및 docker hub에서 검색합니다)
+    image: 'mongo'        # image 이름입니다 (local 및 docker hub에서 검색합니다)
     volumes:
-      - data: /data/db  # anonymous volume 및 bind mount를 정의할 수 있습니다
+      - data: /data/db    # anonymous volume 및 bind mount를 정의할 수 있습니다
     environment:
       MONGODB_USERNAME: admin
       MONGODB_PASSWORD: secret
     env_file:
       - ./env/mongo.env
   backend:
-    build: ./backend    # Dockerfile 위치를 지정하여 image를 빌드할 수 있습니다
-    #build:              # Dockerfile이 여러개 있을 경우, 이름을 지정하여 빌드할 수 있습니다
+    build: ./backend      # Dockerfile 위치를 지정하여 image를 빌드할 수 있습니다
+    #build:               # Dockerfile이 여러개 있을 경우, 이름을 지정하여 빌드할 수 있습니다
       #context: ./backend
       #dockerfile: Dockerfile-dev
       #args:
@@ -54,6 +54,15 @@ services:
     - mongodb
     image: 'myapp-node'
   frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontend/src:/app/src
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
 ```
 
 docker compose를 실행/중지시키는 방법은 다음과 같습니다.
